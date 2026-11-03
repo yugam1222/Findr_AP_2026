@@ -104,3 +104,13 @@ erDiagram
         boolean is_read
         timestamptz created_at
     }
+
+    %% Additional database constraints:
+    %% 1. UNIQUE (community_id, user_id) in COMMUNITY_MEMBERSHIPS.
+    %% 2. At most one verification question per item.
+    %% 3. At most one approved claim per item.
+    %% 4. One active claim per claimant/item combination.
+    %% 5. At most one handover per claim.
+    %% 6. Claims can only reference FOUND reports.
+    %% 7. A user cannot claim their own FOUND report.
+    %% 8. Only the finder can approve or reject a claim.
