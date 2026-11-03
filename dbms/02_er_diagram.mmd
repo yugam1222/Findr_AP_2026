@@ -1,0 +1,106 @@
+erDiagram
+    USERS ||--o{ COMMUNITY_MEMBERSHIPS : joins
+    COMMUNITIES ||--o{ COMMUNITY_MEMBERSHIPS : has
+    USERS ||--o{ ITEMS : reports
+    COMMUNITIES ||--o{ ITEMS : contains
+    CATEGORIES ||--o{ ITEMS : classifies
+    ITEMS ||--o{ ITEM_IMAGES : has
+    ITEMS ||--o| VERIFICATION_QUESTIONS : protects
+    ITEMS ||--o{ CLAIMS : receives
+    USERS ||--o{ CLAIMS : submits
+    USERS o|--o{ CLAIMS : reviews
+    CLAIMS ||--o| HANDOVERS : may_result_in
+    USERS ||--o{ NOTIFICATIONS : receives
+    ITEMS o|--o{ NOTIFICATIONS : references
+    CLAIMS o|--o{ NOTIFICATIONS : references
+
+    USERS {
+        uuid user_id PK
+        varchar full_name
+        varchar email UK
+        text password_hash
+        varchar phone
+        text profile_image_url
+        timestamptz created_at
+    }
+    COMMUNITIES {
+        uuid community_id PK
+        varchar name
+        varchar community_type
+        text description
+        text address
+        timestamptz created_at
+    }
+    COMMUNITY_MEMBERSHIPS {
+        uuid membership_id PK
+        uuid community_id FK
+        uuid user_id FK
+        varchar role
+        varchar membership_status
+        timestamptz joined_at
+    }
+    CATEGORIES {
+        uuid category_id PK
+        varchar category_name UK
+    }
+    ITEMS {
+        uuid item_id PK
+        uuid reporter_id FK
+        uuid community_id FK
+        uuid category_id FK
+        varchar report_type
+        varchar title
+        text description
+        date event_date
+        varchar location_label
+        numeric latitude
+        numeric longitude
+        varchar status
+        timestamptz created_at
+        timestamptz updated_at
+    }
+    ITEM_IMAGES {
+        uuid image_id PK
+        uuid item_id FK
+        text image_url
+        timestamptz uploaded_at
+    }
+    VERIFICATION_QUESTIONS {
+        uuid question_id PK
+        uuid item_id FK,UK
+        text question_text
+        text answer_hash
+        boolean is_active
+        timestamptz created_at
+    }
+    CLAIMS {
+        uuid claim_id PK
+        uuid item_id FK
+        uuid claimant_id FK
+        timestamptz verification_passed_at
+        varchar status
+        text review_note
+        uuid reviewed_by FK
+        timestamptz reviewed_at
+        timestamptz created_at
+        timestamptz updated_at
+    }
+    HANDOVERS {
+        uuid handover_id PK
+        uuid claim_id FK,UK
+        timestamptz scheduled_at
+        timestamptz completed_at
+        text handover_location
+        text confirmation_note
+        varchar status
+    }
+    NOTIFICATIONS {
+        uuid notification_id PK
+        uuid user_id FK
+        uuid related_item_id FK
+        uuid related_claim_id FK
+        varchar notification_type
+        text message
+        boolean is_read
+        timestamptz created_at
+    }
