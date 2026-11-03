@@ -172,26 +172,40 @@ FROM approved_claim ac
 JOIN updated_item ui ON ui.item_id = ac.item_id
 JOIN created_handover ch ON ch.claim_id = ac.claim_id;
 
+
 -- WRITE W5: Complete a scheduled handover and mark the item RETURNED atomically.
--- If no scheduled handover exists for an approved claim, no item status changes.
-WITH completed_handover AS (
-    UPDATE handovers h
-    SET status = 'COMPLETED', completed_at = NOW()
-    FROM claims cl
-    WHERE h.claim_id = cl.claim_id
-      AND cl.claim_id = :'claim_id'
+-- Locks all relevant rows and proceeds only when the claim, handover and item
+-- are in the correct states.
+
+WITH locked_target AS MATERIALIZED (
+    SELECT h.handover_id, cl.item_id
+    FROM handovers h
+    JOIN claims cl ON cl.claim_id = h.claim_id
+    JOIN items i ON i.item_id = cl.item_id
+    WHERE cl.claim_id = :'claim_id'
       AND cl.status = 'APPROVED'
       AND h.status = 'SCHEDULED'
-    RETURNING cl.item_id
-), updated_item AS (
+      AND i.status = 'CLAIM_APPROVED'
+    FOR UPDATE OF h, cl, i
+),
+completed_handover AS (
+    UPDATE handovers h
+    SET status = 'COMPLETED',
+        completed_at = NOW()
+    FROM locked_target lt
+    WHERE h.handover_id = lt.handover_id
+    RETURNING lt.item_id
+),
+updated_item AS (
     UPDATE items i
-    SET status = 'RETURNED', updated_at = NOW()
+    SET status = 'RETURNED',
+        updated_at = NOW()
     FROM completed_handover ch
     WHERE i.item_id = ch.item_id
-      AND i.status = 'CLAIM_APPROVED'
     RETURNING i.item_id, i.status
 )
 SELECT * FROM updated_item;
+
 
 -- WRITE W6: Mark one of the authenticated user's notifications as read
 UPDATE notifications
